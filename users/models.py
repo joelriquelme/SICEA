@@ -40,3 +40,42 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
 
     def __str__(self):
         return self.email
+
+
+class Medidor(models.Model):
+    TIPO_CHOICES = (
+        ('ELECTRICIDAD', 'Electricidad'),
+        ('AGUA', 'Agua'),
+    )
+    nombre = models.CharField(max_length=100)
+    numero_cliente = models.CharField(max_length=50)
+    tipo_medidor = models.CharField(max_length=20, choices=TIPO_CHOICES)
+    cobertura = models.CharField(max_length=100)
+
+    def __str__(self):
+        return f"{self.nombre} ({self.numero_cliente})"
+
+
+class Boleta(models.Model):
+    medidor = models.ForeignKey(Medidor, on_delete=models.CASCADE, related_name='boletas')
+    mes = models.IntegerField()
+    año = models.IntegerField()
+    día = models.IntegerField()
+    neto = models.DecimalField(max_digits=10, decimal_places=2)
+    iva = models.DecimalField(max_digits=10, decimal_places=2)
+    total_pagar = models.DecimalField(max_digits=10, decimal_places=2)
+
+    def __str__(self):
+        return f"Boleta {self.mes}/{self.año} - Medidor {self.medidor.nombre}"
+
+
+class Cargo(models.Model):
+    boleta = models.ForeignKey(Boleta, on_delete=models.CASCADE, related_name='cargos')
+    nombre = models.CharField(max_length=100)
+    kw = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    kwh = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    m3 = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    monto = models.DecimalField(max_digits=10, decimal_places=2)
+
+    def __str__(self):
+        return f"{self.nombre} - Boleta {self.boleta.id}"

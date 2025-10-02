@@ -1,8 +1,19 @@
+import os
+import sys
+import django
 import pdfplumber
 from pathlib import Path
 import pandas as pd
 import re
 from datetime import datetime
+from reader.models import Meter, Bill, Charge
+
+# Agregar el directorio raíz al sys.path
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+# Configurar Django
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "SICEAproject.settings")
+django.setup()
 
 
 class AguasAndinasReader:
@@ -12,37 +23,40 @@ class AguasAndinasReader:
     @staticmethod
     def extract_info_from_text(text: str, file_pdf: str) -> dict:
         """
-        Extract relevant information from PDF text
+        Extract relevant information from PDF text, focusing on 'CONSUMO DE AGUA'.
         """
         data_tmp = {'file': file_pdf}
 
-        # Extract Total amount to pay
-        total_match = re.search(r'TOTAL A PAGAR\s*\$\s*([\d.,]+)', text)
-        if total_match:
-            data_tmp['total_amount'] = total_match.group(1).replace('.', '')
-
-        # Extract Account number
+        # Extract Account Number
         account_match = re.search(r'Nro de cuenta\s*(\d+-\d+)', text)
-        if not account_match:
-            account_match = re.search(r'(\d{6}-\d)', text)
         if account_match:
             data_tmp['account_number'] = account_match.group(1)
 
-        # Extract month and year from emission or due date
-        date_match = re.search(r'FECHA EMISIÓN:(\d{2}-[A-Z]{3}-\d{4})', text)
-        if not date_match:
-            date_match = re.search(r'VENCIMIENTO\s*(\d{2}-[A-Z]{3}-\d{4})', text)
-
-        if date_match:
-            date_str = date_match.group(1)
+        # Extract Current Reading Date and calculate month/year
+        reading_date_match = re.search(r'LECTURA ACTUAL\s*(\d{2}-[A-Z]{3}-\d{4})', text)
+        if reading_date_match:
+            reading_date_str = reading_date_match.group(1)
             try:
-                # Convert date (e.g., "11-FEB-2025") to datetime object
-                date = datetime.strptime(date_str, '%d-%b-%Y')
-                data_tmp['month'] = date.strftime('%B')  # Full month name
-                data_tmp['year'] = date.year
-                data_tmp['month_year'] = date.strftime('%m-%Y')  # MM-YYYY format
+                reading_date = datetime.strptime(reading_date_str, '%d-%b-%Y')
+                previous_month = reading_date.month - 1 if reading_date.month > 1 else 12
+                year = reading_date.year if previous_month != 12 else reading_date.year - 1
+                data_tmp['month'] = previous_month
+                data_tmp['year'] = year
             except ValueError:
-                data_tmp['month_year'] = date_str
+                data_tmp['month'] = None
+                data_tmp['year'] = None
+
+        # Extract Total to Pay
+        total_match = re.search(r'TOTAL A PAGAR\s*\$\s*([\d.,]+)', text)
+        if total_match:
+            data_tmp['total_amount'] = float(total_match.group(1).replace('.', '').replace(',', '.'))
+
+        # Extract 'CONSUMO DE AGUA' charge
+        consumption_match = re.search(r'(CONSUMO AGUA)\s+([\d.,]+)\s+([\d.,]+)', text)
+        if consumption_match:
+            data_tmp['charge_name'] = consumption_match.group(1)
+            data_tmp['cubic_meters'] = float(consumption_match.group(2).replace('.', '').replace(',', '.'))
+            data_tmp['charge_amount'] = float(consumption_match.group(3).replace('.', '').replace(',', '.'))
 
         return data_tmp
 
@@ -62,9 +76,37 @@ class AguasAndinasReader:
 
             # Extract specific information
             extracted_data = self.extract_info_from_text(complete_text, file_pdf)
-            extracted_data['complete_text'] = complete_text
+
+            # Retrieve or create the Meter
+            meter, _ = Meter.objects.get_or_create(
+                client_number=extracted_data['account_number'],
+                defaults={
+                    'name': f"Meter {extracted_data['account_number']}",
+                    'meter_type': 'WATER',
+                    'coverage': 'Unknown',
+                }
+            )
+
+            # Create the Bill
+            bill = Bill.objects.create(
+                meter=meter,
+                month=extracted_data['month'],
+                year=extracted_data['year'],
+                total_to_pay=extracted_data['total_amount'],
+            )
+
+            # Create the Charge for 'CONSUMO AGUA'
+            if 'charge_name' in extracted_data:
+                Charge.objects.create(
+                    bill=bill,
+                    name=extracted_data['charge_name'],
+                    value=extracted_data['charge_amount'],
+                    value_type='Water Consumption',
+                    charge=int(extracted_data['cubic_meters']),
+                )
 
             # Add to the list of all processed bills
+            extracted_data['complete_text'] = complete_text
             self.all_data.append(extracted_data)
 
             return extracted_data
@@ -147,12 +189,3 @@ class EnelReader:
             print(f"Error processing bill: {e}")
             return {}
 
-
-water_path = Path("./input/water_bills")
-
-water_pdfs = [file for file in water_path.iterdir() if file.is_file()]
-
-reader = AguasAndinasReader()
-reader.process_multiple_bills(water_pdfs)
-reader.export_to_excel()
-print(f"Processed {len(reader.all_data)} bills")

@@ -19,9 +19,6 @@ class Bill(models.Model):
     meter = models.ForeignKey(Meter, on_delete=models.CASCADE, related_name='bills')
     month = models.IntegerField()
     year = models.IntegerField()
-    day = models.IntegerField()
-    net = models.DecimalField(max_digits=10, decimal_places=2)
-    vat = models.DecimalField(max_digits=10, decimal_places=2)
     total_to_pay = models.DecimalField(max_digits=10, decimal_places=2)
 
     def __str__(self):
@@ -33,6 +30,7 @@ class Charge(models.Model):
     name = models.CharField(max_length=100)
     value = models.DecimalField(max_digits=10, decimal_places=2)
     value_type = models.CharField(max_length=50)
+    charge = models.IntegerField()
 
     def __str__(self):
         return f"{self.name} - Bill {self.bill.id}"

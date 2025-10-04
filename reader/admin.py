@@ -12,7 +12,7 @@ class MeterAdmin(admin.ModelAdmin):
 
 @admin.register(Bill)
 class BillAdmin(admin.ModelAdmin):
-    list_display = ('meter', 'month', 'year', 'total_to_pay')
+    list_display = ('meter', 'month', 'year', 'total_to_pay', 'pdf_filename')
     search_fields = ('meter__name', 'month', 'year')
     list_filter = ('month', 'year')
     ordering = ('-year', '-month')

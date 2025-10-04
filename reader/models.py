@@ -20,6 +20,10 @@ class Bill(models.Model):
     month = models.IntegerField()
     year = models.IntegerField()
     total_to_pay = models.DecimalField(max_digits=10, decimal_places=2)
+    pdf_filename = models.CharField(max_length=255, null=True, blank=True, default=None)
+
+    class Meta:
+        unique_together = (('meter', 'month', 'year'),)
 
     def __str__(self):
         return f"Bill {self.month}/{self.year} - Meter {self.meter.name}"

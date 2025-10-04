@@ -9,7 +9,7 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         # Carpeta de entrada
-        water_path = Path("./reader/input/water_bills")  # ajusté la ruta porque está dentro de tu app
+        water_path = Path("./reader/input/water_bills")
 
         # Obtener PDFs
         water_pdfs = [file for file in water_path.iterdir() if file.is_file()]
@@ -22,9 +22,6 @@ class Command(BaseCommand):
         # Mostrar primera factura
         if reader.all_data:
             self.stdout.write(str(reader.all_data[0]))
-
-        # Exportar a Excel
-        reader.export_to_excel()
 
         # Mensaje final
         self.stdout.write(self.style.SUCCESS(f"Processed {len(reader.all_data)} bills"))

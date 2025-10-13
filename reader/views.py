@@ -1,4 +1,4 @@
-from django.http import JsonResponse
+from django.http import JsonResponse, FileResponse, Http404
 import os
 import tempfile
 from rest_framework.views import APIView
@@ -6,6 +6,16 @@ from django.contrib.auth import get_user_model
 from .models import Meter, Bill, Charge
 from .reader import EnelReader, BillDetector, AguasAndinasReader
 import uuid
+from rest_framework import generics, permissions
+from .serializers import BillSerializer
+from django.views.generic import ListView, DetailView
+from rest_framework.response import Response
+from rest_framework import status
+from .serializers import MeterSerializer, ChargeSerializer
+from django.db.models import F, Value, IntegerField
+from django.db.models.functions import Coalesce
+from rest_framework.generics import ListAPIView
+from django.conf import settings
 
 User = get_user_model()
 
@@ -80,3 +90,120 @@ class ProcessMultipleBillsView(APIView):
                     os.unlink(tmp_path)
 
         return JsonResponse({'results': results})
+
+
+class BillListView(generics.ListAPIView):
+    """
+    GET /api/reader/bills/?client_number=...&meter_type=...&month=...&year=...&start_date=...&end_date=...
+    Lista facturas con filtros opcionales, incluyendo rango de fechas.
+    """
+    serializer_class = BillSerializer
+
+    def get_queryset(self):
+        qs = Bill.objects.select_related("meter").prefetch_related("charges").all()
+        client_number = self.request.query_params.get("client_number")
+        meter_type = self.request.query_params.get("meter_type")
+        month = self.request.query_params.get("month")
+        year = self.request.query_params.get("year")
+        start_date = self.request.query_params.get("start_date")  # Formato: YYYY-MM
+        end_date = self.request.query_params.get("end_date")      # Formato: YYYY-MM
+
+        if client_number:
+            qs = qs.filter(meter__client_number=client_number)
+        if meter_type:
+            qs = qs.filter(meter__meter_type=meter_type)
+        if month:
+            qs = qs.filter(month=month)
+        if year:
+            qs = qs.filter(year=year)
+
+        # Filtrar por rango de fechas
+        if start_date and end_date:
+            try:
+                start_year, start_month = map(int, start_date.split('-'))
+                end_year, end_month = map(int, end_date.split('-'))
+                start_period = start_year * 12 + start_month
+                end_period = end_year * 12 + end_month
+
+                # Anotar el período en meses y filtrar
+                qs = qs.annotate(
+                    period_in_months=Coalesce(F('year') * 12 + F('month'), Value(0, output_field=IntegerField()))
+                ).filter(
+                    period_in_months__gte=start_period,
+                    period_in_months__lte=end_period
+                )
+            except ValueError:
+                raise ValueError("Formato inválido de fechas. Use YYYY-MM.")
+
+        return qs
+
+class BillDetailView(generics.RetrieveUpdateDestroyAPIView):
+    """
+    GET / PUT / DELETE para una factura por pk.
+    """
+    queryset = Bill.objects.select_related("meter").prefetch_related("charges").all()
+    serializer_class = BillSerializer
+
+
+class MeterListView(APIView):
+    """
+    GET /api/reader/meters/
+    Devuelve una lista de todos los medidores.
+    """
+    def get(self, request):
+        meters = Meter.objects.all()
+        serializer = MeterSerializer(meters, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+        
+
+class MeterDetailView(generics.RetrieveUpdateDestroyAPIView):
+    """
+    GET / PUT / DELETE para un medidor por pk.
+    """
+    queryset = Meter.objects.all()
+    serializer_class = MeterSerializer
+
+
+class BillChargesView(ListAPIView):
+    """
+    GET /api/reader/bills/<pk>/charges/
+    Devuelve los cargos asociados a una factura específica.
+    """
+    serializer_class = ChargeSerializer
+
+    def get_queryset(self):
+        pk = self.kwargs.get('pk')  # Obtener el pk de la factura desde la URL
+        return Charge.objects.filter(bill_id=pk)
+
+class DownloadBillView(APIView):
+    """
+    GET /api/reader/bills/<pk>/download/
+    Descarga el archivo PDF de la boleta almacenada en 'storage'.
+    """
+    def get(self, request, pk):
+        try:
+            # Obtener la boleta por su ID
+            bill = Bill.objects.get(pk=pk)
+
+            # Verificar si el archivo PDF está definido
+            if not bill.pdf_filename:
+                return Response(
+                    {"detail": "La boleta no tiene un archivo PDF asociado."},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+
+            # Construir la ruta completa al archivo
+            file_path = os.path.join(settings.BASE_DIR, 'storage', bill.pdf_filename)
+
+            # Verificar si el archivo existe
+            if not os.path.exists(file_path):
+                raise Http404("El archivo PDF no existe en el servidor.")
+
+            # Devolver el archivo como respuesta
+            return FileResponse(open(file_path, 'rb'), as_attachment=True, filename=bill.pdf_filename)
+
+        except Bill.DoesNotExist:
+            return Response(
+                {"detail": "La boleta no existe."},
+                status=status.HTTP_404_NOT_FOUND
+            )

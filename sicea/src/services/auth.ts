@@ -13,6 +13,8 @@ export interface AuthResponse {
     first_name?: string;
     last_name?: string;
     date_joined: string;
+    is_active: boolean;
+    is_staff: boolean;
   };
 }
 

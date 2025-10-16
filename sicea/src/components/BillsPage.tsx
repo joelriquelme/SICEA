@@ -4,6 +4,7 @@ import EditBillModal from './EditBillModal'; // Importar el nuevo componente
 import NavBar from './NavBar';
 import { Droplets, Zap, Trash2, Edit3, Filter, Download } from 'lucide-react'; // Cambiar el ícono a Download
 import axios from 'axios'; // Importar axios
+import { useAuth } from '../hooks/AuthContext';
 
 type Meter = {
   id: number;
@@ -53,6 +54,7 @@ export default function BillsPage(): JSX.Element {
   const [filters, setFilters] = useState({ meterType, selectedMeter, startMonth, startYear, endMonth, endYear }); // Estado para filtros
   const [expandedBillId, setExpandedBillId] = useState<number | null>(null); // Estado para expandir cargos
   const [charges, setCharges] = useState<Charge[]>([]); // Estado para almacenar los cargos de la factura
+  const { user } = useAuth(); // Obtener el usuario autenticado
 
   const fetchMeters = async () => {
     try {
@@ -432,6 +434,7 @@ export default function BillsPage(): JSX.Element {
                         </td>
                         <td className="border-b border-gray-700 px-4 py-2">{formatCurrency(b.total_to_pay)}</td>
                         <td className="border-b border-gray-700 px-4 py-2 flex gap-2">
+                          {user?.is_staff && (
                           <button
                             onClick={(e) => {
                               e.stopPropagation(); // Evitar que se active el evento de la fila
@@ -442,6 +445,8 @@ export default function BillsPage(): JSX.Element {
                           >
                             <Edit3 className="w-5 h-5" />
                           </button>
+                          )}
+                          {user?.is_staff && (
                           <button
                             onClick={(e) => {
                               e.stopPropagation(); // Evitar que se active el evento de la fila
@@ -450,8 +455,10 @@ export default function BillsPage(): JSX.Element {
                             className="bg-red-500 text-white p-2 rounded hover:bg-red-600 transition-colors"
                             title="Eliminar"
                           >
+                          
                             <Trash2 className="w-5 h-5" />
                           </button>
+                          )}
                           <button
                             onClick={(e) => {
                               e.stopPropagation(); // Evitar que se active el evento de la fila

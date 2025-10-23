@@ -28,7 +28,7 @@ const NavBar: React.FC = () => {
       <div className="flex-1 flex justify-center">
         <button
             onClick={handleHome}
-            className="text-2xl font-bold text-white tracking-wide">
+            className="text-4xl font-bold text-white tracking-wide hover:text-blue-300 transition-colors duration-200">
             SICEA
         </button>
       </div>

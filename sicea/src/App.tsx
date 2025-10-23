@@ -6,6 +6,7 @@ import HomePage from './components/HomePage';
 import ExportPage from "./components/ExportPage.tsx";
 import BillsPage from './components/BillsPage';
 import ChargesPage from './components/ChargesPage';
+import MetersPage from './components/MetersPage';
 
 
 
@@ -69,6 +70,14 @@ function App() {
           element={
             <PrivateRoute>
               <ChargesPage />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/medidores"
+          element={
+            <PrivateRoute>
+              <MetersPage />
             </PrivateRoute>
           }
         />

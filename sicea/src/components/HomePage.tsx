@@ -45,6 +45,18 @@ const HomePage: React.FC = () => {
               Exportar Información
             </button>
           </div>
+          {/* Gestión de Medidores */}
+          {user?.is_staff && (
+            <div className="bg-blue-800/80 rounded-2xl shadow-2xl p-10 flex flex-col items-center w-80 hover:scale-105 transition-transform duration-200">
+              <FileSpreadsheet className="w-24 h-24 text-blue-200 mb-6" />
+              <button
+                className="w-full bg-blue-900 text-white font-bold py-3 px-6 rounded-lg text-lg shadow-lg hover:bg-blue-700 transition-colors duration-200"
+                onClick={() => navigate('/medidores')}
+              >
+                Gestión de Medidores
+              </button>
+            </div>
+          )}
         </div>
         <div className="text-center mt-16">
           <p className="text-blue-200/60 text-sm">

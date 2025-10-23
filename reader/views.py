@@ -164,6 +164,31 @@ class MeterDetailView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = MeterSerializer
 
 
+class MeterCreateView(generics.CreateAPIView):
+    """
+    POST /api/reader/meters/
+    Crea un nuevo medidor.
+    """
+    queryset = Meter.objects.all()
+    serializer_class = MeterSerializer
+
+
+class MeterUpdateView(generics.UpdateAPIView):
+    """
+    PUT / PATCH /api/reader/meters/<pk>/
+    Edita un medidor existente.
+    """
+    queryset = Meter.objects.all()
+    serializer_class = MeterSerializer
+
+class MeterDeleteView(generics.DestroyAPIView):
+    """
+    DELETE /api/reader/meters/<pk>/delete/
+    Elimina un medidor por pk.
+    """
+    queryset = Meter.objects.all()
+    serializer_class = MeterSerializer
+
 class BillChargesView(ListAPIView):
     """
     GET /api/reader/bills/<pk>/charges/

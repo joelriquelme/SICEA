@@ -17,5 +17,8 @@ urlpatterns = [
     path("meters/", views.MeterListView.as_view(), name="meters-list"),
     path("meters/<int:pk>/", views.MeterDetailView.as_view(), name="meters-detail"),
 
-    
+    # Endpoints para crear y actualizar medidores
+    path("meters/create/", views.MeterCreateView.as_view(), name="meter-create-new"),
+    path("meters/<int:pk>/update/", views.MeterUpdateView.as_view(), name="meter-update-existing"),
+    path("meters/<int:pk>/delete/", views.MeterDeleteView.as_view(), name="meter-delete"),
 ]

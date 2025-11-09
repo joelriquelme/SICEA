@@ -1,16 +1,68 @@
 import { useState } from 'react';
 import axios from 'axios';
+import { Trash2 } from 'lucide-react';
 
 const FileUpload = () => {
   const [files, setFiles] = useState<File[]>([]);
   const [uploading, setUploading] = useState(false);
   const [success, setSuccess] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [validationResults, setValidationResults] = useState<any[] | null>(null);
+  const [validated, setValidated] = useState(false);
+  const [validating, setValidating] = useState(false);
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setFiles(Array.from(event.target.files || []));
+    const newFiles = Array.from(event.target.files || []);
+    // Agrega los nuevos archivos a los existentes, evitando duplicados por nombre
+    setFiles(prev =>
+      [...prev, ...newFiles].filter(
+        (file, idx, arr) => arr.findIndex(f => f.name === file.name && f.size === file.size) === idx
+      )
+    );
     setSuccess(null);
     setError(null);
+    setValidationResults(null);
+    setValidated(false);
+  };
+
+  const handleValidate = async () => {
+    setError(null);
+    setValidationResults(null);
+    setValidated(false);
+    setValidating(true);
+
+    if (files.length === 0) {
+      setError('Selecciona archivos para validar.');
+      setValidating(false);
+      return;
+    }
+
+    const formData = new FormData();
+    files.forEach(file => {
+      formData.append('files', file);
+    });
+
+    try {
+      const res = await axios.post(
+        'http://localhost:8000/api/reader/validate-batch-bills/',
+        formData,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        }
+      );
+      const results = res.data.results;
+      setValidationResults(results);
+      // Solo se considera validado si todos los archivos tienen status 'correct'
+      const allCorrect = results.length > 0 && results.every((r: any) => r.status === 'correct');
+      setValidated(allCorrect);
+      if (!allCorrect) setError('Existen archivos no válidos o duplicados. Corrige antes de guardar.');
+    } catch (err: any) {
+      setError('Error al validar archivos');
+    } finally {
+      setValidating(false);
+    }
   };
 
   const handleSubmit = async (event: React.FormEvent) => {
@@ -38,12 +90,38 @@ const FileUpload = () => {
       );
       setSuccess('Archivos subidos correctamente.');
       setFiles([]);
+      setValidationResults(null);
+      setValidated(false);
       const input = document.getElementById('file-input') as HTMLInputElement;
       if (input) input.value = '';
     } catch (err: any) {
       setError('Error al subir archivos');
     } finally {
       setUploading(false);
+    }
+  };
+
+  const handleRemoveFile = (index: number) => {
+    const newFiles = files.filter((_, i) => i !== index);
+    setFiles(newFiles);
+
+    // Actualiza los resultados de validación solo para los archivos restantes
+    if (validationResults && validationResults.length > 0) {
+      const newValidationResults = validationResults.filter((_, i) => i !== index);
+      setValidationResults(newValidationResults);
+      // Recalcula si todos los archivos restantes están correctos
+      const allCorrect = newValidationResults.length > 0 && newValidationResults.every((r: any) => r.status === 'correct');
+      setValidated(allCorrect);
+    }
+
+    setSuccess(null);
+    setError(null);
+    // Limpia el input si no quedan archivos
+    if (newFiles.length === 0) {
+      const input = document.getElementById('file-input') as HTMLInputElement;
+      if (input) input.value = '';
+      setValidationResults(null);
+      setValidated(false);
     }
   };
 
@@ -71,20 +149,88 @@ const FileUpload = () => {
               onChange={handleFileSelect}
               className="block w-full text-white bg-white/10 border border-white/30 rounded-lg px-4 py-3 mb-4 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all duration-200 hover:bg-white/15"
             />
-            <button
-              type="submit"
-              disabled={uploading || files.length === 0}
-              className="w-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 disabled:from-blue-400 disabled:to-blue-500 disabled:cursor-not-allowed text-white font-semibold py-3 px-4 rounded-lg transition-all duration-200 transform hover:scale-[1.02] disabled:hover:scale-100 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 focus:ring-offset-transparent shadow-lg hover:shadow-xl flex items-center justify-center"
-            >
-              {uploading ? 'Subiendo...' : `Guardar archivos`}
-            </button>
+            <div className="flex gap-4">
+              <button
+                type="button"
+                disabled={files.length === 0 || uploading || validating}
+                onClick={handleValidate}
+                className={`w-1/2 bg-gradient-to-r from-green-700 to-green-800 hover:from-green-800 hover:to-green-900 disabled:opacity-50 text-white font-semibold py-3 px-4 rounded-lg transition-all duration-200 hover:scale-[1.02] flex items-center justify-center`}
+              >
+                {validating ? (
+                  <span className="flex items-center gap-2">
+                    <svg className="animate-spin h-5 w-5 text-white" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"/>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+                    </svg>
+                    Validando...
+                  </span>
+                ) : (
+                  "Validar Facturas"
+                )}
+              </button>
+              <button
+                type="submit"
+                disabled={
+                  uploading ||
+                  files.length === 0 ||
+                  !validated ||
+                  (validationResults && validationResults.some((r: any) => r.status !== 'correct'))
+                }
+                className={`w-1/2 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-semibold py-3 px-4 rounded-lg transition-all duration-200 hover:scale-[1.02] flex items-center justify-center ${
+                  !validated ||
+                  files.length === 0 ||
+                  (validationResults && validationResults.some((r: any) => r.status !== 'correct'))
+                    ? 'opacity-50 cursor-not-allowed'
+                    : ''
+                }`}
+              >
+                {uploading ? (
+                  <span className="flex items-center gap-2">
+                    <svg className="animate-spin h-5 w-5 text-white" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"/>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+                    </svg>
+                    Subiendo...
+                  </span>
+                ) : (
+                  `Guardar archivos`
+                )}
+              </button>
+            </div>
           </form>
           {files.length > 0 && (
             <div className="mt-6">
               <p className="text-blue-200 mb-2">Archivos seleccionados:</p>
               <ul className="list-disc list-inside text-white text-sm">
                 {files.map((file, index) => (
-                  <li key={index}>{file.name}</li>
+                  <li key={index} className="flex items-center justify-between py-1">
+                    <span>{file.name}</span>
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveFile(index)}
+                      className="ml-2 p-2 bg-red-600 text-white rounded hover:bg-red-700 flex items-center"
+                      title="Eliminar"
+                      style={{ minWidth: '32px' }}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+          {validationResults && (
+            <div className="mt-6">
+              <p className="text-blue-200 mb-2">Resultado de validación:</p>
+              <ul className="list-disc list-inside text-white text-sm">
+                {validationResults.map((r, idx) => (
+                  <li key={idx}>
+                    <span className="font-bold">{r.file}:</span>{" "}
+                    {r.status === "correct" && <span className="text-green-400">Correcta</span>}
+                    {r.status === "duplicated" && <span className="text-yellow-400">Duplicada en lote</span>}
+                    {r.status === "in_db" && <span className="text-red-400">Ya existe en la base de datos</span>}
+                    {r.status === "invalid" && <span className="text-red-400">Inválida: {r.detail}</span>}
+                  </li>
                 ))}
               </ul>
             </div>

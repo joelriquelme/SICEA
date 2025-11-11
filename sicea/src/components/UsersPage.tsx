@@ -9,8 +9,10 @@ const UsersPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
+  const [isStaff, setIsStaff] = useState(false);
   const [createErrors, setCreateErrors] = useState<Record<string, string[]>>({});
   const [createLoading, setCreateLoading] = useState(false);
   const [editingUser, setEditingUser] = useState<any | null>(null);
@@ -48,12 +50,22 @@ const UsersPage: React.FC = () => {
     e.preventDefault();
     setCreateLoading(true);
     setCreateErrors({});
+
+    // Validar que las contraseñas coincidan
+    if (password !== confirmPassword) {
+      setCreateErrors({ confirmPassword: ['Las contraseñas no coinciden'] });
+      setCreateLoading(false);
+      return;
+    }
+
     try {
-      await usersService.createUser({ email, password, first_name: firstName, last_name: lastName });
+      await usersService.createUser({ email, password, first_name: firstName, last_name: lastName, is_staff: isStaff });
       setEmail('');
       setPassword('');
+      setConfirmPassword('');
       setFirstName('');
       setLastName('');
+      setIsStaff(false);
       setIsCreateModalOpen(false);
       void fetchUsers();
     } catch (err: any) {
@@ -346,6 +358,34 @@ const UsersPage: React.FC = () => {
                 {createErrors.password && createErrors.password.map((m) => (
                   <p key={m} className="text-red-400 text-sm mt-1">{m}</p>
                 ))}
+              </div>
+              <div>
+                <label className="block text-gray-300 mb-2">Confirmar Contraseña</label>
+                <input 
+                  value={confirmPassword} 
+                  onChange={(e) => setConfirmPassword(e.target.value)} 
+                  placeholder="Repetir contraseña" 
+                  type="password" 
+                  className="w-full bg-slate-700 text-white px-4 py-2 rounded-lg border border-white/30" 
+                  required 
+                />
+                {createErrors.confirmPassword && createErrors.confirmPassword.map((m) => (
+                  <p key={m} className="text-red-400 text-sm mt-1">{m}</p>
+                ))}
+              </div>
+              <div>
+                <label className="flex items-center gap-2 text-gray-300">
+                  <input 
+                    type="checkbox" 
+                    checked={isStaff} 
+                    onChange={(e) => setIsStaff(e.target.checked)} 
+                    className="w-4 h-4 accent-blue-500 rounded"
+                  />
+                  <span>Administrador</span>
+                </label>
+                <p className="text-gray-400 text-xs mt-1 ml-6">
+                  Los administradores pueden gestionar usuarios y acceder a todas las funcionalidades del sistema.
+                </p>
               </div>
               {/* non_field_errors */}
               {createErrors.non_field_errors && createErrors.non_field_errors.map((m) => (

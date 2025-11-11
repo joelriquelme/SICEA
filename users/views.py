@@ -2,10 +2,12 @@ import uuid
 from rest_framework import generics, status
 from rest_framework.views import APIView
 from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.permissions import IsAdminUser
 from rest_framework.response import Response
 from rest_framework.authtoken.models import Token
 
 from .serializers import RegisterSerializer, LoginSerializer, UserSerializer
+from .serializers import AdminUserSerializer
 from django.contrib.auth import get_user_model
 
 User = get_user_model()
@@ -47,3 +49,17 @@ class UserMeView(APIView):
 
     def get(self, request):
         return Response(UserSerializer(request.user).data)
+
+
+class AdminUserListCreateView(generics.ListCreateAPIView):
+    """Listar y crear usuarios (solo administradores)."""
+    queryset = User.objects.all().order_by('-date_joined')
+    serializer_class = AdminUserSerializer
+    permission_classes = [IsAuthenticated, IsAdminUser]
+
+
+class AdminUserDetailView(generics.RetrieveUpdateDestroyAPIView):
+    """Obtener, actualizar o eliminar un usuario por id (solo admin)."""
+    queryset = User.objects.all()
+    serializer_class = AdminUserSerializer
+    permission_classes = [IsAuthenticated, IsAdminUser]

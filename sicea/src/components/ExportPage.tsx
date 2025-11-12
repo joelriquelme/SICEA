@@ -1,10 +1,10 @@
 import React, { useState } from "react";
 import NavBar from "./NavBar";
-import { Download, Droplets, Zap } from "lucide-react";
+import { Download, Droplets, Zap, Layers, History } from "lucide-react";
 import axios from "axios";
 
 const ExportPage: React.FC = () => {
-  const [meterType, setMeterType] = useState<"WATER" | "ELECTRICITY" | "">("");
+  const [meterType, setMeterType] = useState<"WATER" | "ELECTRICITY" | "BOTH" | "ALL" | "">("");
 
   const months = [
     { value: "01", label: "Enero" },
@@ -34,6 +34,13 @@ const ExportPage: React.FC = () => {
     e.preventDefault();
     setError("");
 
+    // Si es ALL (histórico completo), no requiere fechas
+    if (meterType === "ALL") {
+      await exportData("ALL", "", "");
+      return;
+    }
+
+    // Para otros tipos, validar que se completen todos los campos
     if (!meterType || !startMonth || !startYear || !endMonth || !endYear) {
       setError("Por favor, completa todos los campos.");
       return;
@@ -42,9 +49,19 @@ const ExportPage: React.FC = () => {
     const startDate = `${startYear}-${startMonth}`;
     const endDate = `${endYear}-${endMonth}`;
 
+    await exportData(meterType, startDate, endDate);
+  };
+
+  const exportData = async (type: string, startDate: string, endDate: string) => {
     setLoading(true);
     try {
-      const params = { meter_type: meterType, start_date: startDate, end_date: endDate };
+      const params: any = { meter_type: type };
+      
+      // Solo agregar fechas si no es ALL
+      if (type !== "ALL") {
+        params.start_date = startDate;
+        params.end_date = endDate;
+      }
 
       const response = await axios.get("http://localhost:8000/api/writer/export-excel/", {
         params,
@@ -59,11 +76,19 @@ const ExportPage: React.FC = () => {
       const link = document.createElement("a");
       link.href = url;
 
-      let company = "";
-      if (meterType === "WATER") company = "AguasAndinas";
-      else if (meterType === "ELECTRICITY") company = "Enel";
+      let filename = "";
+      if (type === "ALL") {
+        filename = "Facturas_Historico_Completo.xlsx";
+      } else {
+        let company = "";
+        if (type === "WATER") company = "AguasAndinas";
+        else if (type === "ELECTRICITY") company = "Enel";
+        else if (type === "BOTH") company = "Completas";
+        
+        filename = `Facturas_${company}_${startDate}_a_${endDate}.xlsx`;
+      }
 
-      link.download = `Facturas_${company}_${startDate}_a_${endDate}.xlsx`;
+      link.download = filename;
       document.body.appendChild(link);
       link.click();
       link.remove();
@@ -90,38 +115,65 @@ const ExportPage: React.FC = () => {
           )}
 
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Tipo de medidor */}
+            {/* Tipo de exportación */}
             <div>
-              <label className="block text-blue-100 mb-2 font-medium">Tipo de Medidor</label>
-              <div className="flex gap-4">
+              <label className="block text-blue-100 mb-2 font-medium">Tipo de Exportación</label>
+              <div className="grid grid-cols-2 gap-3 mb-3">
                 <button
                   type="button"
                   onClick={() => setMeterType("WATER")}
-                  className={`flex items-center justify-center gap-2 w-1/2 py-3 rounded-lg font-semibold transition-all duration-200 ${
+                  className={`flex flex-col items-center justify-center gap-2 py-3 rounded-lg font-semibold transition-all duration-200 ${
                     meterType === "WATER"
                       ? "bg-blue-600 text-white shadow-lg"
                       : "bg-white/10 text-blue-200 hover:bg-white/20"
                   }`}
                 >
-                  <Droplets className="w-5 h-5" />
-                  Agua
+                  <Droplets className="w-6 h-6" />
+                  <span className="text-sm">Solo Agua</span>
                 </button>
                 <button
                   type="button"
                   onClick={() => setMeterType("ELECTRICITY")}
-                  className={`flex items-center justify-center gap-2 w-1/2 py-3 rounded-lg font-semibold transition-all duration-200 ${
+                  className={`flex flex-col items-center justify-center gap-2 py-3 rounded-lg font-semibold transition-all duration-200 ${
                     meterType === "ELECTRICITY"
                       ? "bg-yellow-500 text-white shadow-lg"
                       : "bg-white/10 text-blue-200 hover:bg-white/20"
                   }`}
                 >
-                  <Zap className="w-5 h-5" />
-                  Electricidad
+                  <Zap className="w-6 h-6" />
+                  <span className="text-sm">Solo Electricidad</span>
+                </button>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setMeterType("BOTH")}
+                  className={`flex flex-col items-center justify-center gap-2 py-3 rounded-lg font-semibold transition-all duration-200 ${
+                    meterType === "BOTH"
+                      ? "bg-green-600 text-white shadow-lg"
+                      : "bg-white/10 text-blue-200 hover:bg-white/20"
+                  }`}
+                >
+                  <Layers className="w-6 h-6" />
+                  <span className="text-sm">Ambos (con rango)</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMeterType("ALL")}
+                  className={`flex flex-col items-center justify-center gap-2 py-3 rounded-lg font-semibold transition-all duration-200 ${
+                    meterType === "ALL"
+                      ? "bg-purple-600 text-white shadow-lg"
+                      : "bg-white/10 text-blue-200 hover:bg-white/20"
+                  }`}
+                >
+                  <History className="w-6 h-6" />
+                  <span className="text-sm">Histórico Completo</span>
                 </button>
               </div>
             </div>
 
-            {/* Selección de mes y año */}
+            {/* Selección de fechas - Solo visible si NO es ALL */}
+            {meterType !== "ALL" && (
             <div className="grid grid-cols-2 gap-6">
               {/* Fecha de inicio */}
               <div>
@@ -171,6 +223,7 @@ const ExportPage: React.FC = () => {
                 </div>
               </div>
             </div>
+            )}
 
             {/* Botón de exportar */}
             <button

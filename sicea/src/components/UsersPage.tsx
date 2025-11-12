@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import NavBar from './NavBar';
 import { usersService } from '../services/users';
-import { Edit3, Trash2 } from 'lucide-react';
+import { Edit3, Trash2, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 
 const UsersPage: React.FC = () => {
   const [users, setUsers] = useState<any[]>([]);
@@ -28,6 +28,8 @@ const UsersPage: React.FC = () => {
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [sortField, setSortField] = useState<'email' | 'first_name' | 'is_staff' | null>(null);
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
   const fetchUsers = async () => {
     setLoading(true);
@@ -204,6 +206,50 @@ const UsersPage: React.FC = () => {
     }
   };
 
+  const handleSort = (field: 'email' | 'first_name' | 'is_staff') => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('asc');
+    }
+  };
+
+  const getSortIcon = (field: 'email' | 'first_name' | 'is_staff') => {
+    if (sortField !== field) {
+      return <ArrowUpDown className="w-4 h-4 opacity-50" />;
+    }
+    return sortDirection === 'asc' 
+      ? <ArrowUp className="w-4 h-4" /> 
+      : <ArrowDown className="w-4 h-4" />;
+  };
+
+  const sortedUsers = React.useMemo(() => {
+    if (!sortField) return users;
+    
+    return [...users].sort((a, b) => {
+      let aValue = a[sortField];
+      let bValue = b[sortField];
+
+      // Handle booleans (is_staff)
+      if (typeof aValue === 'boolean') {
+        aValue = aValue ? 1 : 0;
+        bValue = bValue ? 1 : 0;
+      }
+
+      // Handle strings (email, first_name)
+      if (typeof aValue === 'string') {
+        aValue = aValue.toLowerCase();
+        bValue = bValue?.toLowerCase() || '';
+      }
+
+      if (sortDirection === 'asc') {
+        return aValue > bValue ? 1 : -1;
+      }
+      return aValue < bValue ? 1 : -1;
+    });
+  }, [users, sortField, sortDirection]);
+
   return (
     <div>
       <NavBar />
@@ -230,14 +276,38 @@ const UsersPage: React.FC = () => {
             <table className="w-full text-left text-white">
               <thead>
                 <tr>
-                      <th>Correo</th>
-                      <th>Nombre</th>
-                      <th>Rol</th>
-                      <th>Acciones</th>
+                  <th 
+                    className="cursor-pointer hover:bg-white/10 transition-colors select-none py-2"
+                    onClick={() => handleSort('email')}
+                  >
+                    <div className="flex items-center gap-2">
+                      Correo
+                      {getSortIcon('email')}
+                    </div>
+                  </th>
+                  <th 
+                    className="cursor-pointer hover:bg-white/10 transition-colors select-none py-2"
+                    onClick={() => handleSort('first_name')}
+                  >
+                    <div className="flex items-center gap-2">
+                      Nombre
+                      {getSortIcon('first_name')}
+                    </div>
+                  </th>
+                  <th 
+                    className="cursor-pointer hover:bg-white/10 transition-colors select-none py-2"
+                    onClick={() => handleSort('is_staff')}
+                  >
+                    <div className="flex items-center gap-2">
+                      Rol
+                      {getSortIcon('is_staff')}
+                    </div>
+                  </th>
+                  <th className="py-2">Acciones</th>
                 </tr>
               </thead>
               <tbody>
-                {users.map((u) => (
+                {sortedUsers.map((u) => (
                   <tr key={u.id} className="border-t border-white/10">
                     <td className="py-2">{u.email}</td>
                     <td className="py-2">{u.first_name} {u.last_name}</td>

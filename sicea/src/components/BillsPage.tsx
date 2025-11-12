@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import ConfirmModal from './ConfirmModal'; // Importar el nuevo componente
 import EditBillModal from './EditBillModal'; // Importar el nuevo componente
 import NavBar from './NavBar';
-import { Droplets, Zap, Trash2, Edit3, Filter, Download } from 'lucide-react'; // Cambiar el ícono a Download
+import { Droplets, Zap, Trash2, Edit3, Filter, Download, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react'; // Agregar iconos de ordenamiento
 import axios from 'axios'; // Importar axios
 import { useAuth } from '../hooks/AuthContext';
 
@@ -46,7 +46,7 @@ export default function BillsPage(): JSX.Element {
   const [billToDelete, setBillToDelete] = useState<number | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [billToEdit, setBillToEdit] = useState<Bill | null>(null);
-  const [sortConfig, setSortConfig] = useState<{ key: 'month' | 'year' | 'total_to_pay'; direction: 'asc' | 'desc' } | null>(null);
+  const [sortConfig, setSortConfig] = useState<{ key: 'meter' | 'month' | 'year' | 'total_to_pay'; direction: 'asc' | 'desc' } | null>(null);
   const [startMonth, setStartMonth] = useState<string>(''); // Nuevo mes de inicio
   const [startYear, setStartYear] = useState<string>(''); // Nuevo año de inicio
   const [endMonth, setEndMonth] = useState<string>(''); // Nuevo mes de fin
@@ -188,7 +188,7 @@ export default function BillsPage(): JSX.Element {
     }
   };
 
-  const handleSort = (key: 'month' | 'year' | 'total_to_pay') => {
+  const handleSort = (key: 'meter' | 'month' | 'year' | 'total_to_pay') => {
     setSortConfig((prev) => {
       if (prev?.key === key) {
         // Toggle direction if the same column is clicked
@@ -196,6 +196,15 @@ export default function BillsPage(): JSX.Element {
       }
       return { key, direction: 'asc' }; // Default to ascending
     });
+  };
+
+  const getSortIcon = (key: 'meter' | 'month' | 'year' | 'total_to_pay') => {
+    if (sortConfig?.key !== key) {
+      return <ArrowUpDown className="w-4 h-4 opacity-50" />;
+    }
+    return sortConfig.direction === 'asc' 
+      ? <ArrowUp className="w-4 h-4" /> 
+      : <ArrowDown className="w-4 h-4" />;
   };
 
   const sortedBills = React.useMemo(() => {
@@ -208,6 +217,12 @@ export default function BillsPage(): JSX.Element {
       if (sortConfig.key === 'total_to_pay') {
         aValue = parseFloat(aValue.toString());
         bValue = parseFloat(bValue.toString());
+      }
+
+      // Sort by meter name (string)
+      if (sortConfig.key === 'meter') {
+        aValue = (aValue as string).toLowerCase();
+        bValue = (bValue as string).toLowerCase();
       }
 
       if (sortConfig.key === 'year' || sortConfig.key === 'month') {
@@ -411,10 +426,42 @@ export default function BillsPage(): JSX.Element {
               <table className="min-w-full border-collapse text-white">
                 <thead>
                   <tr>
-                    <th className="border-b border-gray-600 px-4 py-2 text-left">Medidor</th>
-                    <th className="border-b border-gray-600 px-4 py-2 text-left">Mes</th>
-                    <th className="border-b border-gray-600 px-4 py-2 text-left">Año</th>
-                    <th className="border-b border-gray-600 px-4 py-2 text-left">Total a Pagar</th>
+                    <th 
+                      className="border-b border-gray-600 px-4 py-2 text-left cursor-pointer hover:bg-white/10 transition-colors select-none"
+                      onClick={() => handleSort('meter')}
+                    >
+                      <div className="flex items-center gap-2">
+                        Medidor
+                        {getSortIcon('meter')}
+                      </div>
+                    </th>
+                    <th 
+                      className="border-b border-gray-600 px-4 py-2 text-left cursor-pointer hover:bg-white/10 transition-colors select-none"
+                      onClick={() => handleSort('month')}
+                    >
+                      <div className="flex items-center gap-2">
+                        Mes
+                        {getSortIcon('month')}
+                      </div>
+                    </th>
+                    <th 
+                      className="border-b border-gray-600 px-4 py-2 text-left cursor-pointer hover:bg-white/10 transition-colors select-none"
+                      onClick={() => handleSort('year')}
+                    >
+                      <div className="flex items-center gap-2">
+                        Año
+                        {getSortIcon('year')}
+                      </div>
+                    </th>
+                    <th 
+                      className="border-b border-gray-600 px-4 py-2 text-left cursor-pointer hover:bg-white/10 transition-colors select-none"
+                      onClick={() => handleSort('total_to_pay')}
+                    >
+                      <div className="flex items-center gap-2">
+                        Total a Pagar
+                        {getSortIcon('total_to_pay')}
+                      </div>
+                    </th>
                     <th className="border-b border-gray-600 px-4 py-2 text-left">Acciones</th>
                   </tr>
                 </thead>

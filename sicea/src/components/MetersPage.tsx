@@ -74,7 +74,7 @@ const MetersPage: React.FC = () => {
   const openAddModal = () => {
     setForm({
       meter_type: "WATER",
-      nombre: "",
+      name: "",
       client_number: "",
       macrozona: "",
       instalacion: "",

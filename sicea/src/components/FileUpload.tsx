@@ -230,6 +230,7 @@ const FileUpload = () => {
                     {r.status === "duplicated" && <span className="text-yellow-400">Duplicada en lote</span>}
                     {r.status === "in_db" && <span className="text-red-400">Ya existe en la base de datos</span>}
                     {r.status === "invalid" && <span className="text-red-400">Inválida: {r.detail}</span>}
+                    {r.status === "not_found" && <span className="text-red-400">El medidor {r.meter} no fue encontrado, si corresponde, cree un nuevo medidor antes de subir esta factura.</span>}
                   </li>
                 ))}
               </ul>

@@ -287,6 +287,15 @@ class ValidateBatchBillsView(APIView):
                     continue
                 lote_keys.add(key)
 
+                # Verifica si se obtuvo el client_number
+                if not bill_data.get('client_number'):
+                    results.append({
+                        'file': file.name,
+                        'status': 'invalid',
+                        'detail': 'No se pudo extraer el número de cliente'
+                    })
+                    continue
+
                 # Verifica existencia en la base de datos
                 meter = Meter.objects.filter(client_number=bill_data.get('client_number')).first()
                 if not meter:

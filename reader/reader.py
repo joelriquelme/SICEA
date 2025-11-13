@@ -43,7 +43,7 @@ class AguasAndinasReader:
         data_tmp = {'file': file_pdf}
 
         # Extract Account Number
-        account_match = re.search(r'Nro de cuenta\s*(\d+-\d+)', text)
+        account_match = re.search(r'Nro de cuenta\s*(\d+-[\dkK]+)', text)
         if account_match:
             data_tmp['client_number'] = account_match.group(1)
 
@@ -209,9 +209,9 @@ class EnelReader:
 
         # Extract Client Number - varios patrones posibles
         client_patterns = [
-            r'Número de cliente\s*(\d+(?:-\w+)?)',
-            r'(\d{6,7}-\w)\s*\d{2}/\d{2}/\d{4}',  # Ejemplo: 177949-4 10/01/2024
-            r'(\d+-\w+)\s+\d{2}/\d{2}/\d{4}'  # Ejemplo: 3042290-2 18/02/2025
+            r'Número de cliente\s*(\d+(?:-[\dkK]+)?)',
+            r'(\d{6,7}-[\dkK])\s*\d{2}/\d{2}/\d{4}',  # Ejemplo: 177949-4 10/01/2024 o 177949-k
+            r'(\d+-[\dkK]+)\s+\d{2}/\d{2}/\d{4}'  # Ejemplo: 3042290-2 18/02/2025 o 3042290-k
         ]
 
         for pattern in client_patterns:

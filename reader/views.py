@@ -250,6 +250,15 @@ class ValidateBatchBillsView(APIView):
         lote_keys = set()
 
         for file in files:
+            # Validar primero que sea un archivo PDF
+            if not file.name.lower().endswith('.pdf'):
+                results.append({
+                    'file': file.name,
+                    'status': 'invalid',
+                    'detail': 'Formato de archivo no válido.'
+                })
+                continue
+
             with tempfile.NamedTemporaryFile(delete=False, suffix='.pdf') as tmp_file:
                 for chunk in file.chunks():
                     tmp_file.write(chunk)
@@ -267,7 +276,7 @@ class ValidateBatchBillsView(APIView):
                     results.append({
                         'file': file.name,
                         'status': 'invalid',
-                        'detail': 'Proveedor no reconocido'
+                        'detail': 'Proveedor no reconocido.'
                     })
                     continue
 
@@ -282,7 +291,7 @@ class ValidateBatchBillsView(APIView):
                     results.append({
                         'file': file.name,
                         'status': 'duplicated',
-                        'detail': 'Duplicada en el lote'
+                        'detail': 'Duplicada en el lote.'
                     })
                     continue
                 lote_keys.add(key)
@@ -292,7 +301,7 @@ class ValidateBatchBillsView(APIView):
                     results.append({
                         'file': file.name,
                         'status': 'invalid',
-                        'detail': 'No se pudo extraer el número de cliente'
+                        'detail': 'No se pudo extraer el número de cliente.'
                     })
                     continue
 
@@ -317,13 +326,13 @@ class ValidateBatchBillsView(APIView):
                     results.append({
                         'file': file.name,
                         'status': 'in_db',
-                        'detail': 'Ya existe en la base de datos'
+                        'detail': 'Ya existe en la base de datos.'
                     })
                 else:
                     results.append({
                         'file': file.name,
                         'status': 'correct',
-                        'detail': 'Factura válida y no duplicada'
+                        'detail': 'Factura válida y no duplicada.'
                     })
 
             except Exception as e:

@@ -37,6 +37,7 @@ const monthNames = [
 
 export default function BillsPage(): JSX.Element {
   const [bills, setBills] = useState<Bill[]>([]);
+  const [totalBills, setTotalBills] = useState<number>(0);
   const [meters, setMeters] = useState<Meter[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -89,7 +90,9 @@ export default function BillsPage(): JSX.Element {
       });
       console.log('Facturas cargadas:', res.data);
       const items: Bill[] = Array.isArray(res.data) ? res.data : res.data.results || [];
+      const count: number = res.data.count || items.length;
       setBills(items);
+      setTotalBills(count);
     } catch (err: any) {
       console.error(err);
       setError(err.message || 'Error al cargar facturas.');
@@ -422,7 +425,11 @@ export default function BillsPage(): JSX.Element {
           )}
           {loading && <p className="text-white">Cargando...</p>}
           {!loading && !error && (
-            <div className="overflow-x-auto">
+            <>
+              <div className="mb-2">
+                <p className="text-white text-sm">Total: {totalBills} {totalBills === 1 ? 'factura' : 'facturas'}</p>
+              </div>
+              <div className="overflow-x-auto">
               <table className="min-w-full border-collapse text-white">
                 <thead>
                   <tr>
@@ -550,6 +557,7 @@ export default function BillsPage(): JSX.Element {
                 </tbody>
               </table>
             </div>
+            </>
           )}
         </div>
         <div className="text-center mt-12">

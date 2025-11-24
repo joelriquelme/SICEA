@@ -221,7 +221,18 @@ const FileUpload = () => {
           )}
           {validationResults && (
             <div className="mt-6">
-              <p className="text-blue-200 mb-2">Resultado de validación:</p>
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-blue-200">Resultado de validación:</p>
+                {validationResults.filter((r) => r.status === 'correct').length > 0 && (
+                  <div className="bg-green-600/50 backdrop-blur-sm rounded-lg px-3 py-1 border border-green-400/30">
+                    <span className="text-green-100 text-xs font-medium">
+                      {validationResults.filter((r) => r.status === 'correct').length}{' '}
+                      {validationResults.filter((r) => r.status === 'correct').length === 1 ? 'factura' : 'facturas'} lista
+                      {validationResults.filter((r) => r.status === 'correct').length === 1 ? '' : 's'} para subir
+                    </span>
+                  </div>
+                )}
+              </div>
               <ul className="list-disc list-inside text-white text-sm">
                 {validationResults.map((r, idx) => (
                   <li key={idx}>

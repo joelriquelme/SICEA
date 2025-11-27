@@ -60,7 +60,7 @@ export default function BillsPage(): JSX.Element {
 
   const fetchMeters = async () => {
     try {
-      const res = await xios.get(`${API_BASE}/reader/meters/`, { withCredentials: true });
+      const res = await axios.get(`${API_BASE}/reader/meters/`, { withCredentials: true });
       setMeters(res.data);
     } catch (err: any) {
       console.error(err);
@@ -83,7 +83,7 @@ export default function BillsPage(): JSX.Element {
       if (filters.startMonth && filters.startYear) params.start_date = `${filters.startYear}-${filters.startMonth}`;
       if (filters.endMonth && filters.endYear) params.end_date = `${filters.endYear}-${filters.endMonth}`;
 
-      const res = await xios.get(`${API_BASE}/reader/bills/`, {
+      const res = await axios.get(`${API_BASE}/reader/bills/`, {
         params,
         withCredentials: true,
       });

@@ -1,11 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { API_BASE } from '../services/config';
 
 type Charge = {
   id: number;
   description?: string;
   amount?: number | string;
-  // otros campos según modelo
 };
 
 export default function ChargesPage(): JSX.Element {

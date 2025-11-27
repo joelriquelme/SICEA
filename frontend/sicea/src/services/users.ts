@@ -12,10 +12,9 @@ export interface AdminUser {
 }
 
 class UsersService {
-  private base = `${API_BASE}/users`;
 
   async listUsers(): Promise<AdminUser[]> {
-    const res = await fetch(`${API_BASE}/admin-users/`, {
+    const res = await fetch(`${API_BASE}/users/admin-users/`, {
       method: 'GET',
       headers: { 'Content-Type': 'application/json', ...authService.getAuthHeaders() },
     });
@@ -24,7 +23,7 @@ class UsersService {
   }
 
   async createUser(data: Partial<AdminUser> & { password?: string }) {
-    const res = await fetch(`${API_BASE}/admin-users/`, {
+    const res = await fetch(`${API_BASE}/users/admin-users/`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', ...authService.getAuthHeaders() },
       body: JSON.stringify(data),

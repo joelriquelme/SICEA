@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { API_BASE } from '../services/config';
 
 type EditBillModalProps = {
   isOpen: boolean;
@@ -54,7 +55,7 @@ const EditBillModal: React.FC<EditBillModalProps> = ({ isOpen, bill, onSave, onC
 
       // Enviar la solicitud PUT al endpoint correspondiente
       const response = await axios.put(
-        `http://localhost:8000/api/reader/bills/${bill.id}/`,
+        `${API_BASE}/reader/bills/${bill.id}/`,
         updatedBill,
         { withCredentials: true }
       );

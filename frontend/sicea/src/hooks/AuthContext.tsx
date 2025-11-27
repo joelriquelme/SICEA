@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { authService, type LoginCredentials, type AuthResponse } from '../services/auth';
+import { API_BASE } from '../services/config';
 
 interface AuthContextType {
   isAuthenticated: boolean;
@@ -27,7 +28,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             let storedUser = localStorage.getItem('user_data');
             if (!storedUser) {
               // Si no hay usuario en localStorage, obtenerlo del backend
-              const response = await fetch('http://127.0.0.1:8000/api/users/me/', {
+              const response = await fetch(`${API_BASE}/users/me/`, {
                 method: 'GET',
                 headers: {
                   'Authorization': `Token ${token}`,

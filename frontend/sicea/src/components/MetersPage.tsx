@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import NavBar from "./NavBar";
 import axios from "axios";
 import { Trash2, Edit3, Droplets, Zap, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
+import { API_BASE } from '../services/config';
 
 type Meter = {
   id: number;
@@ -50,7 +51,7 @@ const MetersPage: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await axios.get("http://localhost:8000/api/reader/meters/", { withCredentials: true });
+      const res = await axios.get(`${API_BASE}/reader/meters/`, { withCredentials: true });
       setMeters(res.data);
     } catch (err: any) {
       setError("Error al cargar medidores.");
@@ -100,8 +101,8 @@ const MetersPage: React.FC = () => {
     try {
       // Solo envía los nuevos campos
       const { meter_type, name, client_number, macrozona, instalacion, direccion } = form;
-      await axios.put(
-        `http://localhost:8000/api/reader/meters/${meterToEdit.id}/update/`,
+      await axios.patch(
+        `${API_BASE}/reader/meters/${meterToEdit.id}/update/`,
         { meter_type, name, client_number, macrozona, instalacion, direccion },
         { withCredentials: true }
       );
@@ -121,7 +122,7 @@ const MetersPage: React.FC = () => {
     setError(null);
     try {
       await axios.post(
-        "http://localhost:8000/api/reader/meters/create/",
+        `${API_BASE}/reader/meters/create/`,
         form,
         { withCredentials: true }
       );
@@ -145,7 +146,7 @@ const MetersPage: React.FC = () => {
     setError(null);
     try {
       await axios.delete(
-        `http://localhost:8000/api/reader/meters/${meterToDelete.id}/delete/`,
+        `${API_BASE}/reader/meters/${meterToDelete.id}/delete/`,
         { withCredentials: true }
       );
       setIsDeleteModalOpen(false);

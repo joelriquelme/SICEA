@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { API_BASE } from '../services/config';
 
 type Charge = {
   id: number;
@@ -16,7 +17,7 @@ export default function ChargesPage(): JSX.Element {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch('/api/reader/charges/', {
+      const res = await fetch(`${API_BASE}/reader/charges/`, {
         credentials: 'include',
         headers: { 'Accept': 'application/json' },
       });

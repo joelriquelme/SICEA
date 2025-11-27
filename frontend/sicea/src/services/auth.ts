@@ -1,4 +1,4 @@
-const API_BASE_URL = 'http://127.0.0.1:8000/api';
+import { API_BASE } from './config';
 
 export interface LoginCredentials {
   email: string;
@@ -30,7 +30,7 @@ class AuthService {
   // Login function
   async login(credentials: LoginCredentials): Promise<AuthResponse> {
     try {
-      const response = await fetch(`${API_BASE_URL}/users/login/`, {
+      const response = await fetch(`${API_BASE}/users/login/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -81,7 +81,7 @@ class AuthService {
     try {
       const token = this.getToken();
       if (token) {
-        await fetch(`${API_BASE_URL}/users/logout/`, {
+        await fetch(`${API_BASE}/users/logout/`, {
           method: 'POST',
           headers: {
             'Authorization': `Token ${token}`,
@@ -139,7 +139,7 @@ class AuthService {
       const token = this.getToken();
       if (!token) return false;
 
-      const response = await fetch(`${API_BASE_URL}/users/me/`, {
+      const response = await fetch(`${API_BASE}/users/me/`, {
         method: 'GET',
         headers: {
           ...this.getAuthHeaders(), // <-- usa la función para obtener el header

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import axios from 'axios';
 import { Trash2 } from 'lucide-react';
+import { API_BASE } from '../services/config';
 
 const FileUpload = () => {
   const [files, setFiles] = useState<File[]>([]);
@@ -43,15 +44,7 @@ const FileUpload = () => {
     });
 
     try {
-      const res = await axios.post(
-        'http://localhost:8000/api/reader/validate-batch-bills/',
-        formData,
-        {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-          },
-        }
-      );
+      const res = await axios.post(`${API_BASE}/reader/validate-batch-bills/`, formData, { headers: { 'Content-Type': 'multipart/form-data' } });
       const results = res.data.results;
       setValidationResults(results);
       // Solo se considera validado si todos los archivos tienen status 'correct'
@@ -78,16 +71,12 @@ const FileUpload = () => {
 
     try {
       const token = localStorage.getItem('auth_token');
-      await axios.post(
-        'http://localhost:8000/api/reader/process-multiple-bills/',
-        formData,
-        {
-          headers: {
-            'Authorization': token ? `Bearer ${token}` : '',
-            'Content-Type': 'multipart/form-data',
-          },
-        }
-      );
+      await axios.post(`${API_BASE}/reader/process-multiple-bills/`, formData, {
+        headers: {
+          'Authorization': token ? `Bearer ${token}` : '',
+          'Content-Type': 'multipart/form-data',
+        },
+      });
       setSuccess('Archivos subidos correctamente.');
       setFiles([]);
       setValidationResults(null);

@@ -1,6 +1,5 @@
 import { authService } from './auth';
-
-const API_BASE_URL = 'http://127.0.0.1:8000/api';
+import { API_BASE } from './config';
 
 export interface AdminUser {
   id: string;
@@ -13,27 +12,21 @@ export interface AdminUser {
 }
 
 class UsersService {
-  private base = `${API_BASE_URL}/users`;
+  private base = `${API_BASE}/users`;
 
   async listUsers(): Promise<AdminUser[]> {
-    const res = await fetch(`${this.base}/admin-users/`, {
+    const res = await fetch(`${API_BASE}/admin-users/`, {
       method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        ...authService.getAuthHeaders(),
-      },
+      headers: { 'Content-Type': 'application/json', ...authService.getAuthHeaders() },
     });
     if (!res.ok) throw new Error('Error al obtener usuarios');
     return await res.json();
   }
 
   async createUser(data: Partial<AdminUser> & { password?: string }) {
-    const res = await fetch(`${this.base}/admin-users/`, {
+    const res = await fetch(`${API_BASE}/admin-users/`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...authService.getAuthHeaders(),
-      },
+      headers: { 'Content-Type': 'application/json', ...authService.getAuthHeaders() },
       body: JSON.stringify(data),
     });
     if (!res.ok) {
@@ -46,12 +39,9 @@ class UsersService {
   }
 
   async updateUser(id: string, data: Partial<AdminUser> & { password?: string }) {
-    const res = await fetch(`${this.base}/admin-users/${id}/`, {
+    const res = await fetch(`${API_BASE}/admin-users/${id}/`, {
       method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-        ...authService.getAuthHeaders(),
-      },
+      headers: { 'Content-Type': 'application/json', ...authService.getAuthHeaders() },
       body: JSON.stringify(data),
     });
     if (!res.ok) {
@@ -63,12 +53,7 @@ class UsersService {
   }
 
   async deleteUser(id: string) {
-    const res = await fetch(`${this.base}/admin-users/${id}/`, {
-      method: 'DELETE',
-      headers: {
-        ...authService.getAuthHeaders(),
-      },
-    });
+    const res = await fetch(`${API_BASE}/admin-users/${id}/`, { method: 'DELETE', headers: { ...authService.getAuthHeaders() } });
     if (!res.ok) {
       const err = await res.json().catch(() => null);
       const errorToThrow = err || { message: 'Error al eliminar usuario' };

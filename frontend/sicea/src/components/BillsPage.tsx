@@ -5,6 +5,7 @@ import NavBar from './NavBar';
 import { Droplets, Zap, Trash2, Edit3, Filter, Download, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react'; // Agregar iconos de ordenamiento
 import axios from 'axios'; // Importar axios
 import { useAuth } from '../hooks/AuthContext';
+import { API_BASE } from '../services/config';
 
 type Meter = {
   id: number;
@@ -59,7 +60,7 @@ export default function BillsPage(): JSX.Element {
 
   const fetchMeters = async () => {
     try {
-      const res = await axios.get('http://localhost:8000/api/reader/meters/', { withCredentials: true });
+      const res = await xios.get(`${API_BASE}/reader/meters/`, { withCredentials: true });
       setMeters(res.data);
     } catch (err: any) {
       console.error(err);
@@ -82,9 +83,7 @@ export default function BillsPage(): JSX.Element {
       if (filters.startMonth && filters.startYear) params.start_date = `${filters.startYear}-${filters.startMonth}`;
       if (filters.endMonth && filters.endYear) params.end_date = `${filters.endYear}-${filters.endMonth}`;
 
-      console.log('Enviando parámetros:', params); // Depuración: Verificar los parámetros enviados
-
-      const res = await axios.get('http://localhost:8000/api/reader/bills/', {
+      const res = await xios.get(`${API_BASE}/reader/bills/`, {
         params,
         withCredentials: true,
       });
@@ -161,7 +160,7 @@ export default function BillsPage(): JSX.Element {
   const confirmDelete = async () => {
     if (billToDelete === null) return;
     try {
-      await axios.delete(`http://localhost:8000/api/reader/bills/${billToDelete}/`, { withCredentials: true });
+      await axios.delete(`${API_BASE}/reader/bills/${billToDelete}/`, { withCredentials: true });
       console.log(`Boleta con ID ${billToDelete} eliminada`);
       setBills((prevBills) => prevBills.filter((bill) => bill.id !== billToDelete));
     } catch (err: any) {
@@ -175,7 +174,7 @@ export default function BillsPage(): JSX.Element {
   const saveEditedBill = async (updatedBill: { id: number; month: number; year: number; total_to_pay: string }) => {
     try {
       const res = await axios.put(
-        `http://localhost:8000/api/reader/bills/${updatedBill.id}/`,
+        `${API_BASE}/reader/bills/${updatedBill.id}/`,
         updatedBill,
         { withCredentials: true }
       );
@@ -252,7 +251,7 @@ export default function BillsPage(): JSX.Element {
 
   const fetchCharges = async (billId: number) => {
     try {
-      const res = await axios.get(`http://localhost:8000/api/reader/bills/${billId}/charges/`, {
+      const res = await axios.get(`${API_BASE}/reader/bills/${billId}/charges/`, {
         withCredentials: true,
       });
       console.log('Charges fetched:', res.data);
@@ -275,7 +274,7 @@ export default function BillsPage(): JSX.Element {
 
   const downloadPDF = async (billId: number) => {
     try {
-      const res = await axios.get(`http://localhost:8000/api/reader/bills/${billId}/download/`, {
+      const res = await axios.get(`${API_BASE}/reader/bills/${billId}/download/`, {
         responseType: 'blob', // Indicar que se espera un archivo binario
         withCredentials: true,
       });

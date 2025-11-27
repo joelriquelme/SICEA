@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import NavBar from "./NavBar";
 import { Download, Droplets, Zap, Layers, History } from "lucide-react";
 import axios from "axios";
+import { API_BASE } from '../services/config';
 
 const ExportPage: React.FC = () => {
   const [meterType, setMeterType] = useState<"WATER" | "ELECTRICITY" | "BOTH" | "ALL" | "">("");
@@ -63,7 +64,7 @@ const ExportPage: React.FC = () => {
         params.end_date = endDate;
       }
 
-      const response = await axios.get("http://localhost:8000/api/writer/export-excel/", {
+      const response = await axios.get(`${API_BASE}/writer/export-excel/`, {
         params,
         responseType: "arraybuffer",
       });

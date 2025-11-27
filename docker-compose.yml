@@ -1,0 +1,25 @@
+version: '3.8'
+
+services:
+  # Servicio Backend (Django)
+  backend:
+    build:
+      context: ./backend  # Carpeta donde está el Dockerfile del back
+    container_name: sicea-backend
+    ports:
+      - "8000:8000"
+    volumes:
+      # Montamos la carpeta local para desarrollo (Hot-Reload)
+      - ./backend:/app
+    environment:
+      - DEBUG=1
+
+  # Servicio Frontend (React)
+  frontend:
+    build:
+      context: ./frontend/sicea  # Carpeta donde está el Dockerfile del front
+    container_name: sicea-frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend

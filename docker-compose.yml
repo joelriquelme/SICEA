@@ -1,8 +1,13 @@
+x-cec-config: &cec-config
+  user: "${UID}:${GID}"
+  restart: always
+
 services:
   # Servicio de base de datos PostgreSQL
   db:
     build:
       context: ./backend/db  # Carpeta donde está el Dockerfile de la DB
+    <<: *cec-config
     container_name: sicea-db
     restart: always
     environment:
@@ -11,15 +16,15 @@ services:
       POSTGRES_PASSWORD: admin1234
     volumes:
       - postgres_data:/var/lib/postgresql/data/
+
   # Servicio Backend (Django)
   backend:
     build:
       context: ./backend  # Carpeta donde está el Dockerfile del back
+    <<: *cec-config
     container_name: sicea-backend
     depends_on:
       - db
-    ports:
-      - "8000:8000"
     volumes:
       - ./backend:/app
       - media_data:/app/storage
@@ -34,11 +39,14 @@ services:
   frontend:
     build:
       context: ./frontend/sicea  # Carpeta donde está el Dockerfile del front
+    <<: *cec-config
     container_name: sicea-frontend
-    ports:
-      - "3000:80"
     depends_on:
       - backend
+    volumes:
+      - ./frontend/sicea/dist:/usr/share/nginx/html
+
 volumes:
-  postgres_data:
-  media_data:
+  postgres_data: {}
+  media_data: {}
+

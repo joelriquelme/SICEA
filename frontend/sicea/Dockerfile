@@ -1,28 +1,21 @@
 # --- Etapa 1: Construcción (Build) ---
 FROM node:18-alpine as build
-
 WORKDIR /app
-
-# Copiamos package.json primero para aprovechar caché
 COPY package.json package-lock.json ./
 RUN npm install
-
-# Copiamos el resto del código
 COPY . .
-
-# Construimos la app para producción (genera carpeta /dist)
 RUN npm run build
+# El código compilado queda en /app/dist
 
-# --- Etapa 2: Servidor (Nginx) ---
+# --- Etapa 2: Servidor (Mínimo) ---
 FROM nginx:alpine
 
-# Copiamos los archivos construidos al servidor Nginx
-COPY --from=build /app/dist /usr/share/nginx/html
-
-# Copiamos nuestra config personalizada y sobrescribimos la default
+# Copiamos la configuración de Nginx para el try_files (ya creada en pasos anteriores)
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
-# Exponemos el puerto 80 (interno del contenedor)
+# El código compilado (dist) NO se copia aquí. 
+# Se montará en /usr/share/nginx/html en el runtime.
+
 EXPOSE 80
 
 CMD ["nginx", "-g", "daemon off;"]

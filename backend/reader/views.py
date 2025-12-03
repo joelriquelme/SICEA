@@ -152,6 +152,19 @@ class BillDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Bill.objects.select_related("meter").prefetch_related("charges").all()
     serializer_class = BillSerializer
 
+    def perform_destroy(self, instance):
+        # Eliminar PDF asociado en storage/ si existe antes de borrar la instancia
+        try:
+            pdf_name = instance.pdf_filename
+            if pdf_name:
+                file_path = os.path.join(settings.BASE_DIR, 'storage', pdf_name)
+                if os.path.exists(file_path):
+                    os.unlink(file_path)
+        except Exception as e:
+            # No interrumpir el borrado por errores al eliminar el archivo; registrar para debug
+            print(f"Warning: no se pudo eliminar el PDF asociado {getattr(instance, 'pdf_filename', None)}: {e}")
+        return super().perform_destroy(instance)
+
 
 class MeterListView(APIView):
     """

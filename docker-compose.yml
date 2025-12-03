@@ -1,18 +1,34 @@
-version: '3.8'
-
 services:
+  # Servicio de base de datos PostgreSQL
+  db:
+    build:
+      context: ./backend/db  # Carpeta donde está el Dockerfile de la DB
+    container_name: sicea-db
+    restart: always
+    environment:
+      POSTGRES_DB: siceadb 
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin1234
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
   # Servicio Backend (Django)
   backend:
     build:
       context: ./backend  # Carpeta donde está el Dockerfile del back
     container_name: sicea-backend
+    depends_on:
+      - db
     ports:
       - "8000:8000"
     volumes:
-      # Montamos la carpeta local para desarrollo (Hot-Reload)
       - ./backend:/app
+      - media_data:/app/storage
     environment:
-      - DEBUG=1
+      DB_HOST: db
+      DB_NAME: siceadb
+      DB_USER: admin
+      DB_PASSWORD: admin1234
+      DB_PORT: 5432
 
   # Servicio Frontend (React)
   frontend:
@@ -23,3 +39,6 @@ services:
       - "3000:80"
     depends_on:
       - backend
+volumes:
+  postgres_data:
+  media_data:

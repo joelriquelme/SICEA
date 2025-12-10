@@ -11,6 +11,7 @@ const FileUpload = () => {
   const [validationResults, setValidationResults] = useState<any[] | null>(null);
   const [validated, setValidated] = useState(false);
   const [validating, setValidating] = useState(false);
+  const [selectFolder, setSelectFolder] = useState(false);
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const newFiles = Array.from(event.target.files || []);
@@ -130,12 +131,31 @@ const FileUpload = () => {
             </div>
           )}
           <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="mb-4">
+              <label className="flex items-center text-white text-sm mb-2">
+                <input
+                  type="checkbox"
+                  checked={selectFolder}
+                  onChange={(e) => {
+                    setSelectFolder(e.target.checked);
+                    setFiles([]);
+                    setValidationResults(null);
+                    setValidated(false);
+                    const input = document.getElementById('file-input') as HTMLInputElement;
+                    if (input) input.value = '';
+                  }}
+                  className="mr-2 w-4 h-4"
+                />
+                Seleccionar carpeta completa (incluye subcarpetas)
+              </label>
+            </div>
             <input
               id="file-input"
               type="file"
-              multiple
+              multiple={!selectFolder}
               accept=".pdf"
               onChange={handleFileSelect}
+              {...(selectFolder ? { webkitdirectory: '', directory: '' } : {})}
               className="block w-full text-white bg-white/10 border border-white/30 rounded-lg px-4 py-3 mb-4 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all duration-200 hover:bg-white/15"
             />
             <div className="flex gap-4">

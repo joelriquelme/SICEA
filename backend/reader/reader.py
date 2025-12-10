@@ -535,18 +535,31 @@ class EnelReader:
         """
         data_tmp = {'file': file_pdf}
 
-        # Extract Invoice Number - buscar número al inicio de línea seguido de "Compañía" o "Cliente"
-        invoice_match = re.search(r'^(\d{10})\s+(?:Compañía|Cliente)', text, re.MULTILINE)
-        if invoice_match:
-            data_tmp['invoice_number'] = invoice_match.group(1)
-        else:
+        # Extract Invoice Number - buscar el número de factura electrónica
+        # Priorizar "FACTURA ELECTRONICA N° xxxxxxxx" o "N° xxxxxxxx" cerca de "FACTURA"
+        invoice_patterns = [
+            r'FACTURA ELECTRONICA\s*N°\s*(\d{8})',
+            r'FACTURA ELECTR[ÓO]NICA\s*N[°º]\s*(\d{8})',
+            r'N°\s*(\d{8})\s*(?:\n|$)',  # N° seguido de 8 dígitos al final de línea
+            r'^(\d{10})\s+(?:Compañía|Cliente)',  # Patrón antiguo como fallback
+        ]
+        invoice_match = None
+        for pattern in invoice_patterns:
+            invoice_match = re.search(pattern, text, re.MULTILINE | re.IGNORECASE)
+            if invoice_match:
+                data_tmp['invoice_number'] = invoice_match.group(1)
+                break
+        if not invoice_match:
             data_tmp['invoice_number'] = ''
 
         # Extract Client Number - varios patrones posibles
+        # Ordenados de más específico a menos específico
         client_patterns = [
             r'Número de cliente\s*(\d+(?:-[\dkK]+)?)',
-            r'(\d{6,7}-[\dkK])\s*\d{2}/\d{2}/\d{4}',  # Ejemplo: 177949-4 10/01/2024 o 177949-k
-            r'(\d+-[\dkK]+)\s+\d{2}/\d{2}/\d{4}'  # Ejemplo: 3042290-2 18/02/2025 o 3042290-k
+            r'SANTIAGO\s*-\s*(\d{6,7}-[\dkK])',  # Ejemplo: SANTIAGO - 2556131-7 (más específico)
+            r'SANTIAGO\s+(\d{6,7}-[\dkK])',  # Ejemplo: SANTIAGO 177946-K (al final de la dirección)
+            r'(\d{6,7}-[\dkK])\s*\d{2}/\d{2}/\d{4}',  # Ejemplo: 177949-4 10/01/2024 o 177949-k (solo 6-7 dígitos)
+            r'(\d{7}-[\dkK])\s+\d{2}/\d{2}/\d{4}',  # Ejemplo: 3042290-2 18/02/2025 (7 dígitos exactos)
         ]
 
         for pattern in client_patterns:
@@ -559,28 +572,43 @@ class EnelReader:
         # Buscar patrones de período de lectura
         period_patterns = [
             r'Periodo de Lectura\s+(\d{2}/\d{2}/\d{4})\s*.*?\s*(\d{2}/\d{2}/\d{4})',
-            r'(\d{2}/\d{2}/\d{4})\s+(\d{2}/\d{2}/\d{4})',  # Dos fechas consecutivas
-            r'Transporte de electricidad.*?(\d{2}/\d{2}/\d{4})\s+(\d{2}/\d{2}/\d{4})'
+            r'Transporte de electricidad.*?(\d{2}/\d{2}/\d{4})\s+(\d{2}/\d{2}/\d{4})',
         ]
 
+        # Primero intentar con patrones específicos
+        period_match = None
         for pattern in period_patterns:
             period_match = re.search(pattern, text, re.IGNORECASE)
             if period_match:
-                end_date_str = period_match.group(2)  # La segunda fecha es el "hasta"
-                try:
-                    end_date = datetime.strptime(end_date_str, '%d/%m/%Y')
-                    # El mes de la boleta es el mes anterior al de la fecha final
-                    bill_month = end_date.month - 1 if end_date.month > 1 else 12
-                    bill_year = end_date.year if bill_month != 12 else end_date.year - 1
+                break
+        
+        # Si no se encuentra, buscar dos fechas consecutivas DIFERENTES en la MISMA línea
+        if not period_match:
+            # Buscar línea por línea para asegurar que ambas fechas estén juntas
+            for line in text.split('\n'):
+                match = re.search(r'(\d{2}/\d{2}/\d{4})\s+(\d{2}/\d{2}/\d{4})', line)
+                if match:
+                    date1, date2 = match.groups()
+                    # Solo aceptar si las fechas son diferentes
+                    if date1 != date2:
+                        period_match = match
+                        break
+        
+        if period_match:
+            end_date_str = period_match.group(2)  # La segunda fecha es el "hasta"
+            try:
+                end_date = datetime.strptime(end_date_str, '%d/%m/%Y')
+                # El mes de la boleta es el mes anterior al de la fecha final
+                bill_month = end_date.month - 1 if end_date.month > 1 else 12
+                bill_year = end_date.year if bill_month != 12 else end_date.year - 1
 
-                    data_tmp['reading_period_start'] = period_match.group(1)
-                    data_tmp['reading_period_end'] = end_date_str
-                    data_tmp['month'] = bill_month
-                    data_tmp['year'] = bill_year
-                    data_tmp['month_year'] = f"{bill_month:02d}/{bill_year}"
-                    break
-                except ValueError:
-                    continue
+                data_tmp['reading_period_start'] = period_match.group(1)
+                data_tmp['reading_period_end'] = end_date_str
+                data_tmp['month'] = bill_month
+                data_tmp['year'] = bill_year
+                data_tmp['month_year'] = f"{bill_month:02d}/{bill_year}"
+            except ValueError:
+                pass
 
         # Extract Tarifa (ej: AT43 AREA 1 S Caso 3 (a))
         # Buscar patrón "AT" seguido de números y texto

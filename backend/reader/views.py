@@ -265,7 +265,18 @@ class ValidateBatchBillsView(APIView):
     - not_found: medidor no encontrado
     """
     def post(self, request):
+        # Debug: ver qué está llegando en el request
+        print(f"DEBUG - request.FILES keys: {list(request.FILES.keys())}")
+        print(f"DEBUG - request.POST keys: {list(request.POST.keys())}")
+        
         files = request.FILES.getlist('files')
+        print(f"DEBUG - Número de archivos recibidos: {len(files)}")
+        
+        if not files:
+            return JsonResponse({
+                'error': 'No se recibieron archivos. Verifique que está seleccionando archivos PDF.'
+            }, status=400)
+        
         results = []
         seen_keys = set()
         lote_keys = set()

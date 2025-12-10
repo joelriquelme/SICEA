@@ -522,7 +522,7 @@ class ExportExcelView(APIView):
                 bill.meter.direccion,
                 periodo,
                 consumo_value,
-                float(bill.total_to_pay)
+                int(bill.total_to_pay)  # Convertir a entero (sin decimales)
             ])
 
             # Escribir datos de IDENTIFICACIÓN y CIFRAS DESTACADAS
@@ -586,8 +586,8 @@ class ExportExcelView(APIView):
                 # Formato de número
                 if col_num == consumo_col and consumo_value:  # Consumo
                     cell.number_format = '#,##0.00'
-                elif col_num == total_col:  # Total a Pagar
-                    cell.number_format = '#,##0.00'
+                elif col_num == total_col:  # Total a Pagar (dinero - sin decimales)
+                    cell.number_format = '#,##0'
             
             # Escribir datos de DESAGREGACIÓN DE CARGOS
             col_idx = first_charge_col
@@ -605,7 +605,7 @@ class ExportExcelView(APIView):
                 # Valor de Monto [$] (incluye negativos como descuentos)
                 monto_value = ''
                 if charge and charge.charge != 0:
-                    monto_value = float(charge.charge)
+                    monto_value = int(charge.charge)  # Convertir a entero (sin decimales)
                 
                 # Escribir m3
                 m3_col = get_column_letter(col_idx)
@@ -633,7 +633,7 @@ class ExportExcelView(APIView):
                 cell_monto.font = data_font
                 cell_monto.alignment = Alignment(horizontal="center", vertical="center")
                 if monto_value:
-                    cell_monto.number_format = '#,##0.00'
+                    cell_monto.number_format = '#,##0'  # Sin decimales para dinero
                 
                 # Si es la última columna, aplicar borde derecho grueso
                 is_last_charge = (col_idx + 1 == last_charge_col)
